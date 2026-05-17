@@ -27,3 +27,4 @@ scripts/__pycache__
 # 临时
 .cache
 .temp
+.venv/ 

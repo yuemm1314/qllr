@@ -27,6 +27,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Boss 笔记' },
   },
   {
+    path: '/skill-ranking',
+    name: 'skill-ranking',
+    component: () => import('@/views/SkillRanking.vue'),
+    meta: { title: '技能倍率排行' },
+  },
+  {
     path: '/bosses/:id',
     name: 'BossEditor',
     component: () => import('@/views/BossEditor.vue'),

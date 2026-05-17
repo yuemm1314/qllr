@@ -50,6 +50,10 @@ onMounted(() => {
           <el-icon><Grid /></el-icon>
           <span>Boss 笔记</span>
         </el-menu-item>
+        <el-menu-item index="/skill-ranking">
+            <el-icon><Trophy /></el-icon>
+            <span>技能倍率</span>
+        </el-menu-item>
       </el-menu>
       <div class="aside-footer">
         <div class="footer-stat">
