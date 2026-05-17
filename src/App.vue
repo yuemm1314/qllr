@@ -8,6 +8,10 @@ const route = useRoute()
 const router = useRouter()
 const charactersStore = useCharactersStore()
 
+// 添加 loading 和 error 状态
+const loading = computed(() => !charactersStore.loaded)
+const error = computed(() => null) // 暂时没有错误处理
+
 const activeMenu = computed(() => {
   if (route.path.startsWith('/characters')) return '/characters'
   if (route.path.startsWith('/bosses')) return '/bosses'
@@ -49,19 +53,19 @@ onMounted(() => {
       </el-menu>
       <div class="aside-footer">
         <div class="footer-stat">
-          角色库 {{ charactersStore.list.length }} 名
+          角色库 {{ charactersStore.total }} 名
         </div>
       </div>
     </el-aside>
 
     <el-main class="app-main">
-      <div v-if="charactersStore.loading" class="loading">
+      <div v-if="loading" class="loading">
         <el-icon class="is-loading" :size="24"><Loading /></el-icon>
         <p>正在加载角色数据…</p>
       </div>
-      <div v-else-if="charactersStore.error" class="error">
+      <div v-else-if="error" class="error">
         <el-alert
-          :title="'数据加载失败：' + charactersStore.error"
+          :title="'数据加载失败：' + error"
           type="error"
           show-icon
           :closable="false"

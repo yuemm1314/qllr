@@ -45,5 +45,9 @@ export const useCharactersStore = defineStore('characters', () => {
     return characters.value.find((c) => c.name === name);
   }
 
-  return { characters, loaded, total, detailedCount, load, findByName };
+  function findById(id: string): Character | undefined {
+    return characters.value.find((c) => c.id === id);
+  }
+
+  return { characters, loaded, total, detailedCount, load, findByName, findById };
 });
