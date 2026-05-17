@@ -79,7 +79,7 @@ const expandedRows = ref<RankingEntry[]>([]);
 
     <h3 class="bucket-title">{{ bucketLabel }} · Top {{ currentList.length }}</h3>
 
-    <el-table :data="currentList" stripe size="small" border>
+    <el-table :data="currentList" size="small" border :row-class-name="() => 'rank-row'">
       <el-table-column label="#" width="60" align="center">
         <!-- 关键: 直接用 index+1, 不读 row.rank, 避免老数据残留 -->
         <template #default="{ $index }">{{ $index + 1 }}</template>
@@ -164,6 +164,26 @@ const expandedRows = ref<RankingEntry[]>([]);
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+:deep(.el-table) {
+  --el-table-bg-color: #2b2218;
+  --el-table-tr-bg-color: #2b2218;
+  --el-table-row-hover-bg-color: #3a2d1f;
+  --el-table-border-color: #5a4632;
+  --el-table-text-color: #e9d8b3;
+  --el-table-header-bg-color: #1f1810;
+  --el-table-header-text-color: #d4b06a;
+}
+
+:deep(.el-table tr),
+:deep(.el-table td.el-table__cell),
+:deep(.el-table th.el-table__cell) {
+  background-color: #2b2218 !important;
+}
+
+:deep(.el-table tbody tr:hover > td.el-table__cell) {
+  background-color: #3a2d1f !important;
 }
 
 .empty { text-align: center; padding: 30px; color: #aa9876; }

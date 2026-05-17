@@ -35,16 +35,16 @@ def last_val(s):
     parts = re.split(r"[/／]", s)
     return to_int(parts[-1])
 
-# 3) 被动 / 自buff 乘数规则 —— 按特异性排序, 命中即 break
-#    (正则, 类型, 计算函数(match)->float)
+# 只识别两类: 神业(×2) 和 威力提升100%(×2)
+# 其他小幅度威力提升 (30%/50% 等) 一律不计, 保持整数倍率
 PASSIVE_RULES = [
-    # 神业 (追加发动)
-    (re.compile(r"神业.*?([0-9]+)\s*回"), "divine", lambda m: 2.0),
-    (re.compile(r"追加发动|再次发动"),      "divine", lambda m: 2.0),
-    # 自buff: 威力提升 N%
-    (re.compile(r"自身.*?威力.*?\+?([0-9]+)\s*%"),     "self_power", lambda m: 1 + int(m.group(1))/100),
-    (re.compile(r"威力.*?提升.*?([0-9]+)\s*%"),         "self_power", lambda m: 1 + int(m.group(1))/100),
-    (re.compile(r"全心全力|攻击力.*?([0-9]+)\s*%提升"), "self_power", lambda m: 2.0),
+    # 神业: 文本含"神业"且后面跟回合数, 或"追加发动/再次发动"
+    (re.compile(r"神业"),               "divine",     lambda m: 2.0),
+    (re.compile(r"追加发动|再次发动"),    "divine",     lambda m: 2.0),
+    # 威力提升 100% (含"全心全力"这种固定 100% 别名)
+    (re.compile(r"威力.*?提升\s*100\s*%"), "self_power", lambda m: 2.0),
+    (re.compile(r"威力\s*\+\s*100\s*%"),   "self_power", lambda m: 2.0),
+    (re.compile(r"全心全力"),              "self_power", lambda m: 2.0),
 ]
 
 def is_attack_skill(name: str, effect: str) -> bool:
@@ -105,6 +105,9 @@ def classify_weakness(char: dict, skill_text: str):
             weapons.add(w)
     return weapons, elems
 
+def norm_name(s: str) -> str:
+    return re.sub(r"\s+", "", (s or "")).strip()
+
 def main():
     if not SRC.exists():
         print(f"[error] 未找到 {SRC}", file=sys.stderr); sys.exit(1)
@@ -155,14 +158,14 @@ def main():
                     "kind": skill_kind,
                     "power": power, "hits": hits,
                     "base": base_mult,
-                    "passiveFactor": round(passive_factor, 3),
+                    "passiveFactor": int(passive_factor) if passive_factor == int(passive_factor) else round(passive_factor, 2),
                     "passiveLabels": passive_labels,
                     "final": round(final, 1),
                     "turnCost": max_turn,
                     "effect": text[:200],
                 }
-                # 去重 key: 同角色+同技能+同分类 只保留最大
-                dedup_key = (name, sk_name, skill_kind)
+                # 去重 key: 不区分 active/ultimate, 同技能整库只留一条
+                dedup_key = (name, norm_name(sk_name))
 
                 for w in weapons:
                     cat = f"weapon:{w}"
