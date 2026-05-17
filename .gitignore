@@ -1,0 +1,29 @@
+# 依赖
+node_modules
+.pnpm-store
+
+# 构建产物
+dist
+dist-ssr
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.local
+
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python 爬虫
+scripts/.venv
+scripts/__pycache__
+*.pyc
+
+# 临时
+.cache
+.temp
