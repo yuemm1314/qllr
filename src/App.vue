@@ -2,13 +2,11 @@
 import { onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
-import { useUiStore } from '@/stores/ui'
-import { Moon, Sunny, User, Grid, Collection } from '@element-plus/icons-vue'
+import { User, Grid, Collection, Loading } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const charactersStore = useCharactersStore()
-const ui = useUiStore()
 
 const activeMenu = computed(() => {
   if (route.path.startsWith('/characters')) return '/characters'
@@ -21,23 +19,20 @@ function go(path: string) {
 
 onMounted(() => {
   charactersStore.load()
-  ui.applyDark()
 })
 </script>
 
 <template>
   <el-container class="app-root">
-    <el-aside width="200px" class="app-aside">
+    <el-aside width="210px" class="app-aside">
       <div class="logo">
-        <span class="logo-emoji">⚔️</span>
-        <span class="logo-text">霸者阵容</span>
+        <span class="logo-emoji">⚔</span>
+        <div class="logo-text">
+          <div class="logo-main">霸者阵容</div>
+          <div class="logo-sub">OCTOPATH COTC</div>
+        </div>
       </div>
-      <el-menu
-        :default-active="activeMenu"
-        class="app-menu"
-        @select="go"
-        background-color="transparent"
-      >
+      <el-menu :default-active="activeMenu" class="app-menu" @select="go">
         <el-menu-item index="/teams">
           <el-icon><Collection /></el-icon>
           <span>我的阵容</span>
@@ -48,23 +43,21 @@ onMounted(() => {
         </el-menu-item>
         <el-menu-item index="/bosses" disabled>
           <el-icon><Grid /></el-icon>
-          <span>Boss 笔记（待开发）</span>
+          <span>Boss 笔记</span>
+          <span class="soon">即将开放</span>
         </el-menu-item>
       </el-menu>
       <div class="aside-footer">
-        <el-button
-          :icon="ui.darkMode ? Sunny : Moon"
-          circle
-          @click="ui.toggleDark()"
-          :title="ui.darkMode ? '切换到亮色' : '切换到暗色'"
-        />
+        <div class="footer-stat">
+          角色库 {{ charactersStore.list.length }} 名
+        </div>
       </div>
     </el-aside>
 
     <el-main class="app-main">
       <div v-if="charactersStore.loading" class="loading">
-        <el-icon class="is-loading"><Loading /></el-icon>
-        正在加载角色数据…
+        <el-icon class="is-loading" :size="24"><Loading /></el-icon>
+        <p>正在加载角色数据…</p>
       </div>
       <div v-else-if="charactersStore.error" class="error">
         <el-alert
@@ -74,8 +67,8 @@ onMounted(() => {
           :closable="false"
         />
         <p style="margin-top: 12px">
-          请确认已按 README 第 3 步把 wiki_avatars.json 和 wiki_active_skills_zh.json
-          放到 <code>src/data/</code> 下，然后重启 <code>npm run dev</code>。
+          请确认已下载 wiki_avatars.json 和 wiki_active_skills_zh.json 到
+          <code>src/data/</code>，然后重启 <code>npm run dev</code>。
         </p>
       </div>
       <router-view v-else />
@@ -88,40 +81,79 @@ onMounted(() => {
   height: 100%;
 }
 .app-aside {
-  background: var(--color-bg-card);
-  border-right: 1px solid var(--color-border);
+  background:
+    linear-gradient(180deg, var(--jrpg-bg-card), var(--jrpg-bg-deep));
+  border-right: 1px solid var(--jrpg-border-gold);
   display: flex;
   flex-direction: column;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.5);
 }
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 16px 20px;
-  font-size: 18px;
-  font-weight: 600;
-  border-bottom: 1px solid var(--color-border);
+  gap: 10px;
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--jrpg-border);
+  background:
+    linear-gradient(180deg, rgba(241, 198, 82, 0.08), transparent);
 }
 .logo-emoji {
-  font-size: 22px;
+  font-size: 28px;
+  color: var(--jrpg-text-gold);
+  text-shadow: 0 0 8px rgba(241, 198, 82, 0.5);
+}
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.logo-main {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--jrpg-text-gold);
+  letter-spacing: 2px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+.logo-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--jrpg-text-muted);
+  letter-spacing: 1.5px;
 }
 .app-menu {
   flex: 1;
   border-right: none;
+  padding-top: 8px;
+}
+.soon {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--jrpg-text-muted);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: 8px;
 }
 .aside-footer {
-  padding: 12px;
-  border-top: 1px solid var(--color-border);
-  display: flex;
-  justify-content: center;
+  padding: 12px 16px;
+  border-top: 1px solid var(--jrpg-border);
+  color: var(--jrpg-text-muted);
+  font-size: 11px;
+  font-family: 'Cinzel', monospace;
+}
+.footer-stat {
+  text-align: center;
 }
 .app-main {
-  padding: 24px;
+  padding: 24px 28px;
 }
 .loading,
 .error {
-  padding: 40px;
+  padding: 60px;
   text-align: center;
-  color: var(--color-text-secondary);
+  color: var(--jrpg-text-soft);
+}
+.loading .el-icon {
+  color: var(--jrpg-text-gold);
 }
 </style>

@@ -3,9 +3,7 @@ import type { Character } from '@/types/character'
 
 defineProps<{
   character: Character
-  /** 是否显示为小尺寸（阵容槽位中用） */
   compact?: boolean
-  /** 是否可点击 */
   clickable?: boolean
 }>()
 
@@ -16,7 +14,7 @@ defineEmits<{
 
 <template>
   <div
-    class="char-card"
+    class="char-card jrpg-card"
     :class="{ compact, clickable }"
     @click="clickable && $emit('click', character)"
   >
@@ -32,24 +30,14 @@ defineEmits<{
           <div class="avatar-fallback">{{ character.name.slice(0, 2) }}</div>
         </template>
       </el-image>
-      <span v-if="character.rarity" class="rarity">
-        {{ '★'.repeat(character.rarity) }}
-      </span>
     </div>
     <div class="info">
       <div class="name">{{ character.name }}</div>
       <div v-if="!compact" class="meta">
-        <el-tag v-if="character.job" size="small">{{ character.job }}</el-tag>
-        <el-tag v-if="character.weapon" size="small" type="info">
-          {{ character.weapon }}
-        </el-tag>
-        <el-tag v-if="character.element" size="small" type="warning">
-          {{ character.element }}
-        </el-tag>
-      </div>
-      <div v-if="!compact && character.activeSkills.length" class="skills">
-        <span class="skills-label">技能</span>
-        <span class="skills-count">{{ character.activeSkills.length }}</span>
+        <span v-if="character.activeSkills.length" class="skills-badge">
+          <span class="skills-icon">⚔</span>
+          技能 {{ character.activeSkills.length }}
+        </span>
       </div>
     </div>
   </div>
@@ -57,12 +45,9 @@ defineEmits<{
 
 <style scoped>
 .char-card {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   transition: all 0.2s;
 }
@@ -71,8 +56,8 @@ defineEmits<{
 }
 .char-card.clickable:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: var(--el-color-primary);
+  border-color: var(--jrpg-border-gold-bright);
+  box-shadow: var(--jrpg-shadow-card), 0 0 12px rgba(241, 198, 82, 0.25);
 }
 .char-card.compact {
   padding: 6px;
@@ -81,18 +66,18 @@ defineEmits<{
   gap: 4px;
 }
 .avatar-wrap {
-  position: relative;
   flex-shrink: 0;
 }
 .avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 6px;
-  background: #eee;
+  width: 52px;
+  height: 52px;
+  border-radius: 3px;
+  border: 1px solid var(--jrpg-border);
+  background: var(--jrpg-bg-deep);
 }
 .compact .avatar {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
 }
 .avatar-fallback {
   width: 100%;
@@ -100,48 +85,42 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ddd;
-  color: #666;
-  font-size: 12px;
-  border-radius: 6px;
-}
-.rarity {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  background: #f1c40f;
-  color: #fff;
-  font-size: 10px;
-  padding: 1px 4px;
-  border-radius: 4px;
+  background: var(--jrpg-bg-deep);
+  color: var(--jrpg-text-muted);
+  font-size: 11px;
+  border-radius: 3px;
 }
 .info {
   flex: 1;
   min-width: 0;
 }
 .name {
-  font-weight: 500;
+  font-family: 'Noto Serif SC', 'STSong', serif;
+  font-weight: 600;
+  color: var(--jrpg-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
 .compact .name {
   font-size: 12px;
 }
 .meta {
   margin-top: 4px;
-  display: flex;
+}
+.skills-badge {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--jrpg-text-soft);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--jrpg-border);
 }
-.skills {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-.skills-count {
-  margin-left: 4px;
-  color: var(--el-color-primary);
-  font-weight: 600;
+.skills-icon {
+  color: var(--jrpg-text-gold);
 }
 </style>

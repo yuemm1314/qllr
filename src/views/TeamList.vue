@@ -1,10 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useTeamsStore } from '@/stores/teams'
+import { useCharactersStore } from '@/stores/characters'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Download, Upload, CopyDocument, Delete, Edit } from '@element-plus/icons-vue'
+import {
+  Plus,
+  Download,
+  Upload,
+  CopyDocument,
+  Delete,
+  Edit,
+} from '@element-plus/icons-vue'
+import type { Team } from '@/types/team'
 
 const teams = useTeamsStore()
+const characters = useCharactersStore()
 const router = useRouter()
 
 function newTeam() {
@@ -20,6 +31,8 @@ async function del(id: string, name: string) {
   try {
     await ElMessageBox.confirm(`确定删除阵容「${name}」？`, '确认', {
       type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
     })
     teams.remove(id)
     ElMessage.success('已删除')
@@ -61,45 +74,114 @@ function importAll() {
 }
 
 function fmtDate(ts: number) {
-  return new Date(ts).toLocaleString('zh-CN')
+  return new Date(ts).toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
-function teamFillCount(team: (typeof teams.teams)[number]): number {
-  const all = [...team.front, ...team.back]
-  return all.filter((s) => s.characterId).length
+function teamFillCount(team: Team): number {
+  return [...team.front, ...team.back].filter((s) => s.characterId).length
 }
+
+/** 获取阵容里 8 个槽位对应的角色（用于缩略图） */
+function slotsOf(team: Team) {
+  return {
+    front: team.front.map((s) => characters.findById(s.characterId)),
+    back: team.back.map((s) => characters.findById(s.characterId)),
+  }
+}
+
+const sortedTeams = computed(() =>
+  [...teams.teams].sort((a, b) => b.updatedAt - a.updatedAt),
+)
 </script>
 
 <template>
   <div class="page">
     <header class="page-header">
-      <h2>我的阵容</h2>
+      <h2 class="page-title">⚔ 我的阵容</h2>
       <div class="actions">
         <el-button :icon="Upload" @click="importAll">导入</el-button>
-        <el-button :icon="Download" @click="exportAll" :disabled="!teams.teams.length">
+        <el-button
+          :icon="Download"
+          @click="exportAll"
+          :disabled="!teams.teams.length"
+        >
           导出
         </el-button>
-        <el-button type="primary" :icon="Plus" @click="newTeam">新建阵容</el-button>
+        <el-button type="primary" :icon="Plus" @click="newTeam">
+          新建阵容
+        </el-button>
       </div>
     </header>
 
-    <el-empty v-if="!teams.teams.length" description="还没有阵容，点击右上角「新建阵容」">
-      <el-button type="primary" :icon="Plus" @click="newTeam">新建阵容</el-button>
+    <el-empty
+      v-if="!teams.teams.length"
+      description="还没有阵容，点击右上角「新建阵容」开始"
+    >
+      <el-button type="primary" :icon="Plus" @click="newTeam">
+        新建第一个阵容
+      </el-button>
     </el-empty>
 
     <div v-else class="team-grid">
-      <el-card v-for="t in teams.teams" :key="t.id" class="team-card" shadow="hover">
-        <div class="team-head">
-          <span class="team-name">{{ t.name }}</span>
-          <span class="team-fill">{{ teamFillCount(t) }}/8</span>
+      <div
+        v-for="t in sortedTeams"
+        :key="t.id"
+        class="team-card jrpg-card"
+      >
+        <div class="card-head">
+          <span class="card-name">{{ t.name }}</span>
+          <span class="card-fill">{{ teamFillCount(t) }}/8</span>
         </div>
-        <div class="team-tags" v-if="t.tags.length">
+
+        <!-- 4+4 缩略 -->
+        <div class="thumbs">
+          <div class="thumb-row front">
+            <div
+              v-for="(c, i) in slotsOf(t).front"
+              :key="'f' + i"
+              class="thumb"
+              :class="{ filled: !!c }"
+            >
+              <el-image v-if="c" :src="c.avatar" fit="cover" loading="lazy">
+                <template #error>
+                  <span class="thumb-fb">{{ c.name.slice(0, 1) }}</span>
+                </template>
+              </el-image>
+            </div>
+          </div>
+          <div class="thumb-row back">
+            <div
+              v-for="(c, i) in slotsOf(t).back"
+              :key="'b' + i"
+              class="thumb"
+              :class="{ filled: !!c }"
+            >
+              <el-image v-if="c" :src="c.avatar" fit="cover" loading="lazy">
+                <template #error>
+                  <span class="thumb-fb">{{ c.name.slice(0, 1) }}</span>
+                </template>
+              </el-image>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-tags" v-if="t.tags.length">
           <el-tag v-for="tag in t.tags" :key="tag" size="small">{{ tag }}</el-tag>
         </div>
-        <div class="team-meta">更新于 {{ fmtDate(t.updatedAt) }}</div>
-        <div class="team-actions">
-          <el-button size="small" :icon="Edit" @click="edit(t.id)">编辑</el-button>
-          <el-button size="small" :icon="CopyDocument" @click="dup(t.id)">复制</el-button>
+        <div class="card-meta">{{ fmtDate(t.updatedAt) }}</div>
+
+        <div class="card-actions">
+          <el-button size="small" :icon="Edit" @click="edit(t.id)">
+            编辑
+          </el-button>
+          <el-button size="small" :icon="CopyDocument" @click="dup(t.id)">
+            复制
+          </el-button>
           <el-button
             size="small"
             type="danger"
@@ -109,7 +191,7 @@ function teamFillCount(team: (typeof teams.teams)[number]): number {
             删除
           </el-button>
         </div>
-      </el-card>
+      </div>
     </div>
   </div>
 </template>
@@ -119,10 +201,15 @@ function teamFillCount(team: (typeof teams.teams)[number]): number {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
-.page-header h2 {
+.page-title {
   margin: 0;
+  font-family: 'Noto Serif SC', serif;
+  letter-spacing: 4px;
+  color: var(--jrpg-text-gold);
+  font-size: 24px;
+  text-shadow: 0 0 12px rgba(241, 198, 82, 0.3), 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 .actions {
   display: flex;
@@ -130,39 +217,101 @@ function teamFillCount(team: (typeof teams.teams)[number]): number {
 }
 .team-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
 }
-.team-head {
+.team-card {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
 }
-.team-name {
+.card-name {
+  font-family: 'Noto Serif SC', serif;
   font-weight: 600;
   font-size: 16px;
+  color: var(--jrpg-text);
 }
-.team-fill {
-  background: var(--el-color-primary-light-8);
-  color: var(--el-color-primary);
+.card-fill {
+  font-family: 'Cinzel', monospace;
+  font-size: 12px;
+  color: var(--jrpg-text-gold);
+  background: rgba(241, 198, 82, 0.1);
+  border: 1px solid var(--jrpg-border-gold);
   padding: 2px 8px;
   border-radius: 10px;
-  font-size: 12px;
 }
-.team-tags {
-  margin-bottom: 8px;
+
+.thumbs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--jrpg-bg-deep);
+  border: 1px solid var(--jrpg-border);
+  border-radius: 4px;
+}
+.thumb-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  position: relative;
+  padding-left: 4px;
+}
+.thumb-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+.thumb-row.front::before {
+  background: var(--jrpg-front);
+}
+.thumb-row.back::before {
+  background: var(--jrpg-back);
+}
+.thumb {
+  aspect-ratio: 1;
+  background: var(--jrpg-bg-base);
+  border: 1px solid var(--jrpg-border);
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.thumb.filled {
+  border-color: var(--jrpg-border-gold);
+}
+.thumb :deep(.el-image) {
+  width: 100%;
+  height: 100%;
+}
+.thumb-fb {
+  font-size: 12px;
+  color: var(--jrpg-text-muted);
+}
+
+.card-tags {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
 }
-.team-meta {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  margin-bottom: 12px;
+.card-meta {
+  color: var(--jrpg-text-muted);
+  font-size: 11px;
+  font-family: 'Cinzel', monospace;
 }
-.team-actions {
+.card-actions {
   display: flex;
   gap: 6px;
+  margin-top: 2px;
 }
 </style>

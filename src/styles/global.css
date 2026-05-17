@@ -1,18 +1,5 @@
-:root {
-  --color-bg: #f5f7fa;
-  --color-bg-card: #ffffff;
-  --color-border: #e4e7ed;
-  --color-text: #303133;
-  --color-text-secondary: #606266;
-}
-
-html.dark {
-  --color-bg: #1a1a1a;
-  --color-bg-card: #242424;
-  --color-border: #4c4d4f;
-  --color-text: #e5eaf3;
-  --color-text-secondary: #a3a6ad;
-}
+/* 引入主题变量 */
+@import './theme.css';
 
 html,
 body,
@@ -20,21 +7,222 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--jrpg-bg-base);
+  color: var(--jrpg-text);
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-/* 滚动条美化 */
+body {
+  /* 木纹底（用 SVG noise + 暗色渐变模拟） */
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(80, 50, 20, 0.5),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse at bottom,
+      rgba(40, 25, 10, 0.6),
+      transparent 70%
+    ),
+    var(--jrpg-bg-base);
+  background-attachment: fixed;
+}
+
+/* 滚动条 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--jrpg-bg-deep);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
+  background: var(--jrpg-border);
+  border-radius: 5px;
+  border: 2px solid var(--jrpg-bg-deep);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--jrpg-border-gold);
+}
+
+/* 选中文本颜色 */
+::selection {
+  background: var(--jrpg-text-gold);
+  color: var(--jrpg-bg-deep);
+}
+
+/* code 字体 */
+code {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--jrpg-border);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--jrpg-text-gold);
+  font-size: 0.9em;
+}
+
+/* ========== 覆盖 Element Plus ========== */
+
+/* 输入框 */
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  background: var(--jrpg-bg-deep) !important;
+  box-shadow: inset 0 0 0 1px var(--jrpg-border) !important;
+}
+.el-input__wrapper:hover,
+.el-select__wrapper:hover {
+  box-shadow: inset 0 0 0 1px var(--jrpg-border-gold) !important;
+}
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused {
+  box-shadow: inset 0 0 0 1px var(--jrpg-border-gold-bright) !important;
+}
+.el-input__inner,
+.el-textarea__inner {
+  color: var(--jrpg-text) !important;
+}
+
+/* 按钮 */
+.el-button {
+  background: linear-gradient(180deg, #3d2a18, #251608) !important;
+  border: 1px solid var(--jrpg-border-gold) !important;
+  color: var(--jrpg-text) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.el-button:hover:not(.is-disabled) {
+  background: linear-gradient(180deg, #523822, #2f1c0c) !important;
+  border-color: var(--jrpg-border-gold-bright) !important;
+  color: var(--jrpg-text-gold) !important;
+  box-shadow: 0 0 8px rgba(241, 198, 82, 0.2);
+}
+.el-button--primary {
+  background: linear-gradient(180deg, #8a6428, #4a3514) !important;
+  border-color: var(--jrpg-border-gold-bright) !important;
+  color: var(--jrpg-text-gold) !important;
+}
+.el-button--primary:hover:not(.is-disabled) {
+  background: linear-gradient(180deg, #a07832, #5a4218) !important;
+}
+.el-button--danger {
+  background: linear-gradient(180deg, #8a3030, #4a1818) !important;
+  border-color: #c84a4a !important;
+  color: #f4d4d4 !important;
+}
+
+/* 弹窗 */
+.el-dialog {
+  background:
+    linear-gradient(180deg, rgba(255, 220, 150, 0.05), transparent 30%),
+    var(--jrpg-bg-card) !important;
+  border: 2px solid var(--jrpg-border-gold) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 8px rgba(241, 198, 82, 0.2) !important;
+}
+.el-dialog__title {
+  color: var(--jrpg-text-gold) !important;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+.el-dialog__headerbtn .el-dialog__close {
+  color: var(--jrpg-text-soft) !important;
+}
+
+/* 菜单 */
+.el-menu {
+  background: transparent !important;
+  border-right: none !important;
+}
+.el-menu-item {
+  color: var(--jrpg-text-soft) !important;
+}
+.el-menu-item:hover {
+  background: rgba(241, 198, 82, 0.08) !important;
+  color: var(--jrpg-text-gold) !important;
+}
+.el-menu-item.is-active {
+  background: linear-gradient(
+    90deg,
+    rgba(241, 198, 82, 0.15),
+    transparent
+  ) !important;
+  color: var(--jrpg-text-gold) !important;
+  border-left: 3px solid var(--jrpg-text-gold);
+}
+.el-menu-item.is-disabled {
+  color: var(--jrpg-text-muted) !important;
+  opacity: 0.5;
+}
+
+/* 标签 */
+.el-tag {
+  background: rgba(241, 198, 82, 0.1) !important;
+  border: 1px solid var(--jrpg-border-gold) !important;
+  color: var(--jrpg-text-gold) !important;
+}
+.el-tag--info {
+  background: rgba(110, 200, 212, 0.1) !important;
+  border-color: var(--jrpg-bp) !important;
+  color: var(--jrpg-bp) !important;
+}
+.el-tag--warning {
+  background: rgba(212, 154, 58, 0.15) !important;
+  border-color: var(--jrpg-sp) !important;
+  color: var(--jrpg-sp) !important;
+}
+
+/* 卡片 */
+.el-card {
+  background:
+    linear-gradient(180deg, rgba(255, 220, 150, 0.04), transparent 50%),
+    var(--jrpg-bg-card) !important;
+  border: 1px solid var(--jrpg-border-gold) !important;
+  color: var(--jrpg-text) !important;
+}
+
+/* 分割线 */
+.el-divider__text {
+  background: var(--jrpg-bg-card) !important;
+  color: var(--jrpg-text-gold) !important;
+  font-family: 'Noto Serif SC', serif;
+  letter-spacing: 2px;
+}
+.el-divider--horizontal {
+  border-top-color: var(--jrpg-border) !important;
+}
+
+/* 空状态 */
+.el-empty__description p {
+  color: var(--jrpg-text-soft) !important;
+}
+
+/* 消息提示 */
+.el-message {
+  background: var(--jrpg-bg-card) !important;
+  border: 1px solid var(--jrpg-border-gold) !important;
+}
+.el-message__content {
+  color: var(--jrpg-text) !important;
+}
+
+/* 下拉选项 */
+.el-select-dropdown {
+  background: var(--jrpg-bg-card) !important;
+  border: 1px solid var(--jrpg-border-gold) !important;
+}
+.el-select-dropdown__item {
+  color: var(--jrpg-text-soft) !important;
+}
+.el-select-dropdown__item.is-hovering {
+  background: rgba(241, 198, 82, 0.1) !important;
+  color: var(--jrpg-text-gold) !important;
+}
+.el-select-dropdown__item.is-selected {
+  color: var(--jrpg-text-gold) !important;
+  background: rgba(241, 198, 82, 0.15) !important;
 }
