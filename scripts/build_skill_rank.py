@@ -112,7 +112,14 @@ def main():
     if not SRC.exists():
         print(f"[error] 未找到 {SRC}", file=sys.stderr); sys.exit(1)
     data = json.loads(SRC.read_text(encoding="utf-8"))
-    chars = data.get("characters") or data  # 兼容两种结构
+    
+    # 处理两种数据结构: {"characters": {...}} 或 {"characters": [...]}
+    chars_data = data.get("characters", data)
+    if isinstance(chars_data, dict):
+        # 如果是字典，转换为列表
+        chars = list(chars_data.values())
+    else:
+        chars = chars_data
 
     # bucket[cat] -> dict[(char,skill,kind)] = entry  (天然去重, 同key保留最大)
     bucket = defaultdict(dict)
