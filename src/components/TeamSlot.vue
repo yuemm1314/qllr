@@ -8,7 +8,6 @@ const props = defineProps<{
   slot: TeamSlot
   character: Character | null
   label?: string
-  /** 'front' | 'back' 用于切换红蓝主题 */
   row: 'front' | 'back'
 }>()
 
@@ -17,14 +16,34 @@ defineEmits<{
   clear: []
 }>()
 
+// 是否有具体的 HP/SP 数值（max 必须存在才算"已配置"）
+const hasHp = computed(
+  () => typeof props.slot.hpMax === 'number' && props.slot.hpMax > 0,
+)
+const hasSp = computed(
+  () => typeof props.slot.spMax === 'number' && props.slot.spMax > 0,
+)
+
 const hpPct = computed(() => {
-  if (!props.slot.hp || !props.slot.hpMax) return 100
-  return Math.max(0, Math.min(100, (props.slot.hp / props.slot.hpMax) * 100))
+  if (!hasHp.value) return 0
+  return Math.max(0, Math.min(100, ((props.slot.hp ?? 0) / props.slot.hpMax!) * 100))
 })
 const spPct = computed(() => {
-  if (!props.slot.sp || !props.slot.spMax) return 100
-  return Math.max(0, Math.min(100, (props.slot.sp / props.slot.spMax) * 100))
+  if (!hasSp.value) return 0
+  return Math.max(0, Math.min(100, ((props.slot.sp ?? 0) / props.slot.spMax!) * 100))
 })
+
+// 觉醒数（只显示已亮的星，没数据时不显示）
+const awakening = computed(() => props.slot.awakening ?? 0)
+const hasAwakening = computed(() => awakening.value > 0)
+
+const configured = computed(
+  () =>
+    props.slot.level !== undefined ||
+    hasHp.value ||
+    hasSp.value ||
+    hasAwakening.value,
+)
 </script>
 
 <template>
@@ -36,57 +55,74 @@ const spPct = computed(() => {
     ]"
     @click="$emit('click')"
   >
-    <!-- 左侧装饰条（红/蓝） -->
+    <!-- 左侧装饰条 -->
     <div class="side-bar"></div>
 
     <template v-if="character">
       <!-- 头像 -->
       <div class="portrait-wrap">
-        <el-image :src="character.avatar" class="portrait" fit="cover" loading="lazy">
+        <el-image :src="character.avatar" class="portrait" fit="contain" loading="lazy">
           <template #error>
             <div class="portrait-fallback">{{ character.name.slice(0, 2) }}</div>
           </template>
         </el-image>
       </div>
 
-      <!-- 中央信息 -->
+      <!-- 信息区 -->
       <div class="info">
-        <div class="info-top">
+        <!-- 第一行：姓名 + 星级 -->
+        <div class="row-top">
           <span class="name">{{ character.name }}</span>
-          <span class="stars">
-            {{ '★'.repeat(slot.awakening ?? 0) }}{{ '☆'.repeat(5 - (slot.awakening ?? 0)) }}
+          <span v-if="hasAwakening" class="stars">
+            {{ '★'.repeat(awakening) }}
           </span>
+          <span v-else class="stars-empty">未配置</span>
         </div>
-        <div class="info-stats">
-          <div class="stat">
-            <span class="stat-label">等级</span>
-            <span class="stat-val">{{ slot.level ?? '—' }}</span>
+
+        <!-- 第二行：等级 + HP/SP 条 -->
+        <div class="row-bottom">
+          <div class="level-box">
+            <span class="level-label">Lv</span>
+            <span class="level-val" :class="{ none: slot.level === undefined }">
+              {{ slot.level ?? '—' }}
+            </span>
           </div>
-          <div class="stat-bars">
+
+          <div class="bars">
             <div class="bar-row">
-              <span class="bar-label">HP</span>
-              <div class="jrpg-bar">
-                <div class="jrpg-bar-fill hp" :style="{ width: hpPct + '%' }"></div>
+              <span class="bar-label hp-label">HP</span>
+              <div class="jrpg-bar" :class="{ inactive: !hasHp }">
+                <div
+                  v-if="hasHp"
+                  class="jrpg-bar-fill hp"
+                  :style="{ width: hpPct + '%' }"
+                ></div>
               </div>
               <span class="bar-val">
-                {{ slot.hp ?? '—' }}<span v-if="slot.hpMax">/{{ slot.hpMax }}</span>
+                <template v-if="hasHp">{{ slot.hp ?? 0 }}/{{ slot.hpMax }}</template>
+                <template v-else>—</template>
               </span>
             </div>
             <div class="bar-row">
-              <span class="bar-label">SP</span>
-              <div class="jrpg-bar">
-                <div class="jrpg-bar-fill sp" :style="{ width: spPct + '%' }"></div>
+              <span class="bar-label sp-label">SP</span>
+              <div class="jrpg-bar" :class="{ inactive: !hasSp }">
+                <div
+                  v-if="hasSp"
+                  class="jrpg-bar-fill sp"
+                  :style="{ width: spPct + '%' }"
+                ></div>
               </div>
               <span class="bar-val">
-                {{ slot.sp ?? '—' }}<span v-if="slot.spMax">/{{ slot.spMax }}</span>
+                <template v-if="hasSp">{{ slot.sp ?? 0 }}/{{ slot.spMax }}</template>
+                <template v-else>—</template>
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 右上清空按钮 -->
-      <button class="clear-btn" @click.stop="$emit('clear')" title="移除">
+      <!-- 右上清空 -->
+      <button class="clear-btn" @click.stop="$emit('clear')" title="移除角色">
         <el-icon><Close /></el-icon>
       </button>
     </template>
@@ -105,7 +141,7 @@ const spPct = computed(() => {
   position: relative;
   display: flex;
   align-items: stretch;
-  height: 86px;
+  height: 78px;
   background:
     linear-gradient(180deg, rgba(255, 220, 150, 0.03), transparent 50%),
     var(--jrpg-bg-card);
@@ -131,7 +167,6 @@ const spPct = computed(() => {
   border-style: solid;
 }
 
-/* 左侧 4px 装饰条 */
 .side-bar {
   width: 4px;
   background: linear-gradient(180deg, var(--row-color), var(--row-color-dim));
@@ -143,20 +178,20 @@ const spPct = computed(() => {
   opacity: 0.4;
 }
 
-/* 头像 */
+/* 头像：用 contain 不被裁切，背景填补留白 */
 .portrait-wrap {
-  width: 70px;
+  width: 64px;
   height: 100%;
-  padding: 6px;
+  padding: 4px;
   flex-shrink: 0;
-  position: relative;
 }
 .portrait {
   width: 100%;
   height: 100%;
   border-radius: 3px;
   border: 1px solid var(--jrpg-border);
-  background: var(--jrpg-bg-deep);
+  background:
+    radial-gradient(circle at center, #3a2a18, var(--jrpg-bg-deep));
 }
 .portrait-fallback {
   width: 100%;
@@ -170,16 +205,16 @@ const spPct = computed(() => {
   border-radius: 3px;
 }
 
-/* 信息区 */
+/* 信息两行 */
 .info {
   flex: 1;
   min-width: 0;
-  padding: 6px 10px 6px 4px;
+  padding: 6px 10px 6px 6px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: space-between;
 }
-.info-top {
+.row-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -198,43 +233,61 @@ const spPct = computed(() => {
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
 .stars {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--jrpg-text-gold);
   text-shadow: 0 0 4px rgba(241, 198, 82, 0.5);
   flex-shrink: 0;
-  letter-spacing: 0px;
+  letter-spacing: 1px;
+}
+.stars-empty {
+  font-size: 10px;
+  color: var(--jrpg-text-muted);
+  flex-shrink: 0;
+  font-style: italic;
 }
 
-.info-stats {
+.row-bottom {
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
 }
-.stat {
+
+/* 等级框 */
+.level-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-right: 8px;
-  border-right: 1px solid var(--jrpg-border);
+  justify-content: center;
   flex-shrink: 0;
-}
-.stat-label {
-  font-size: 9px;
-  color: var(--jrpg-text-muted);
+  min-width: 32px;
+  padding: 2px 4px;
+  border-right: 1px solid var(--jrpg-border);
   line-height: 1;
 }
-.stat-val {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--jrpg-text-gold);
-  line-height: 1.2;
-  font-family: 'Cinzel', 'Noto Serif SC', serif;
+.level-label {
+  font-size: 9px;
+  color: var(--jrpg-text-muted);
+  font-family: 'Cinzel', monospace;
+  letter-spacing: 0.5px;
 }
-.stat-bars {
+.level-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--jrpg-text-gold);
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  margin-top: 1px;
+}
+.level-val.none {
+  color: var(--jrpg-text-muted);
+  font-size: 14px;
+}
+
+/* 双条 */
+.bars {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .bar-row {
@@ -244,14 +297,22 @@ const spPct = computed(() => {
   font-size: 10px;
 }
 .bar-label {
-  width: 18px;
-  color: var(--jrpg-text-muted);
+  width: 16px;
   flex-shrink: 0;
+  font-family: 'Cinzel', monospace;
+  font-weight: 600;
+  font-size: 10px;
+}
+.hp-label {
+  color: var(--jrpg-hp);
+}
+.sp-label {
+  color: var(--jrpg-sp);
 }
 .bar-val {
   font-size: 10px;
   color: var(--jrpg-text-soft);
-  min-width: 56px;
+  min-width: 70px;
   text-align: right;
   font-family: 'Cinzel', monospace;
   flex-shrink: 0;
@@ -259,6 +320,16 @@ const spPct = computed(() => {
 .jrpg-bar {
   flex: 1;
   min-width: 0;
+}
+.jrpg-bar.inactive {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.5),
+      rgba(0, 0, 0, 0.5) 4px,
+      rgba(40, 30, 20, 0.5) 4px,
+      rgba(40, 30, 20, 0.5) 8px
+    );
 }
 
 /* 清空按钮 */
@@ -269,7 +340,7 @@ const spPct = computed(() => {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   border: 1px solid var(--jrpg-border);
   color: var(--jrpg-text-soft);
   display: flex;
@@ -280,6 +351,7 @@ const spPct = computed(() => {
   transition: all 0.2s;
   font-size: 12px;
   padding: 0;
+  z-index: 2;
 }
 .slot:hover .clear-btn {
   opacity: 1;
@@ -290,7 +362,7 @@ const spPct = computed(() => {
   color: #fff;
 }
 
-/* 空位样式 */
+/* 空位 */
 .empty-content {
   flex: 1;
   display: flex;

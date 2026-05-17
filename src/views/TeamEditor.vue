@@ -2,21 +2,21 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTeamsStore } from '@/stores/teams'
+import { useCharactersStore } from '@/stores/characters'
 import TeamSlot from '@/components/TeamSlot.vue'
 import CharacterPicker from '@/components/CharacterPicker.vue'
+import SlotEditDialog from '@/components/SlotEditDialog.vue'
 import { ElMessage } from 'element-plus'
 import { Back, Check } from '@element-plus/icons-vue'
+import type { TeamSlot as TeamSlotType } from '@/types/team'
 
 const route = useRoute()
 const router = useRouter()
 const teams = useTeamsStore()
+const charactersStore = useCharactersStore()
 
 const teamId = computed(() => route.params.id as string)
 const team = computed(() => teams.teams.find((t) => t.id === teamId.value) ?? null)
-
-const pickerOpen = ref(false)
-const pickingSlot = ref<{ row: 'front' | 'back'; index: number } | null>(null)
-
 const resolved = computed(() => (team.value ? teams.resolve(team.value) : null))
 
 const allPickedIds = computed(() => {
@@ -25,6 +25,10 @@ const allPickedIds = computed(() => {
     .map((s) => s.characterId)
     .filter((x): x is string => !!x)
 })
+
+// === 角色选择器 ===
+const pickerOpen = ref(false)
+const pickingSlot = ref<{ row: 'front' | 'back'; index: number } | null>(null)
 
 function openPicker(row: 'front' | 'back', index: number) {
   pickingSlot.value = { row, index }
@@ -42,26 +46,68 @@ function onPick(char: { id: string }) {
   pickingSlot.value = null
 }
 
+// === 槽位编辑弹窗 ===
+const editOpen = ref(false)
+const editing = ref<{ row: 'front' | 'back'; index: number } | null>(null)
+
+const editingSlot = computed<TeamSlotType | null>(() => {
+  if (!editing.value || !team.value) return null
+  return team.value[editing.value.row][editing.value.index]
+})
+const editingChar = computed(() =>
+  charactersStore.findById(editingSlot.value?.characterId ?? null),
+)
+
+function handleSlotClick(row: 'front' | 'back', index: number) {
+  if (!team.value) return
+  const slot = team.value[row][index]
+  if (slot.characterId) {
+    // 已有角色 → 打开编辑弹窗
+    editing.value = { row, index }
+    editOpen.value = true
+  } else {
+    // 空位 → 直接打开选择器
+    openPicker(row, index)
+  }
+}
+
 function clearSlot(row: 'front' | 'back', index: number) {
   if (!team.value) return
   teams.placeCharacter(team.value.id, row, index, null)
 }
 
-// 自动保存反馈
-const savedAt = ref<number | null>(null)
-function markSaved() {
-  if (!team.value) return
+function saveEdit(patch: Partial<TeamSlotType>) {
+  if (!editing.value || !team.value) return
+  const { row, index } = editing.value
+  // 直接合并到响应式 slot 对象
+  Object.assign(team.value[row][index], patch)
   teams.touch(team.value.id)
-  savedAt.value = Date.now()
+  ElMessage.success('已保存')
 }
 
-// 监听变化，节流提示
+function switchFromEdit() {
+  if (!editing.value) return
+  openPicker(editing.value.row, editing.value.index)
+}
+
+function clearFromEdit() {
+  if (!editing.value) return
+  clearSlot(editing.value.row, editing.value.index)
+  ElMessage.success('已清空')
+}
+
+// === 自动保存反馈 ===
+const savedAt = ref<number | null>(null)
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 watch(
-  () => team.value && JSON.stringify(team.value),
+  () => team.value && JSON.stringify({ name: team.value.name, tags: team.value.tags, desc: team.value.description }),
   () => {
+    if (!team.value) return
     if (saveTimer) clearTimeout(saveTimer)
-    saveTimer = setTimeout(markSaved, 400)
+    saveTimer = setTimeout(() => {
+      teams.touch(team.value!.id)
+      savedAt.value = Date.now()
+    }, 500)
   },
 )
 
@@ -89,7 +135,7 @@ const savedHint = computed(() => {
           filterable
           allow-create
           default-first-option
-          placeholder="添加标签（可自由输入）"
+          placeholder="添加标签"
           class="tag-select"
           :reserve-keyword="false"
         >
@@ -113,7 +159,10 @@ const savedHint = computed(() => {
     </div>
 
     <div v-else-if="resolved" class="editor">
-      <!-- 前后卫双列布局 -->
+      <div class="hint">
+        💡 点击空位添加角色，点击已有角色可编辑等级/觉醒/HP/SP
+      </div>
+
       <div class="dual-column">
         <section class="column jrpg-theme-front">
           <h3 class="jrpg-section-title front-title">前　卫</h3>
@@ -125,7 +174,7 @@ const savedHint = computed(() => {
               :character="rs.character"
               :label="'前卫 ' + (i + 1)"
               row="front"
-              @click="openPicker('front', i)"
+              @click="handleSlotClick('front', i)"
               @clear="clearSlot('front', i)"
             />
           </div>
@@ -141,14 +190,13 @@ const savedHint = computed(() => {
               :character="rs.character"
               :label="'后卫 ' + (i + 1)"
               row="back"
-              @click="openPicker('back', i)"
+              @click="handleSlotClick('back', i)"
               @clear="clearSlot('back', i)"
             />
           </div>
         </section>
       </div>
 
-      <!-- 备注 -->
       <section class="notes-section">
         <h3 class="jrpg-section-title">备　注</h3>
         <el-input
@@ -160,10 +208,24 @@ const savedHint = computed(() => {
       </section>
     </div>
 
+    <!-- 角色选择器 -->
     <CharacterPicker
       v-model="pickerOpen"
       :already-picked-ids="allPickedIds"
       @pick="onPick"
+    />
+
+    <!-- 槽位编辑弹窗 -->
+    <SlotEditDialog
+      v-if="editing"
+      v-model="editOpen"
+      :slot="editingSlot"
+      :character="editingChar"
+      :row="editing.row"
+      :index="editing.index"
+      @save="saveEdit"
+      @switch="switchFromEdit"
+      @clear="clearFromEdit"
     />
   </div>
 </template>
@@ -173,7 +235,7 @@ const savedHint = computed(() => {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 .name-input {
@@ -198,13 +260,21 @@ const savedHint = computed(() => {
   opacity: 0;
 }
 
+.hint {
+  color: var(--jrpg-text-muted);
+  font-size: 12px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-left: 2px solid var(--jrpg-border-gold);
+  border-radius: 2px;
+}
+
 .editor {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 28px;
 }
-
-/* 双列布局 */
 .dual-column {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -212,11 +282,7 @@ const savedHint = computed(() => {
 }
 .column {
   background:
-    linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.3),
-      transparent 30%
-    ),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.3), transparent 30%),
     var(--jrpg-bg-base);
   border: 1px solid var(--jrpg-border);
   border-top: 2px solid var(--row-color);
@@ -245,16 +311,11 @@ const savedHint = computed(() => {
   flex-direction: column;
   gap: 8px;
 }
-.notes-section {
-  max-width: 100%;
-}
 .empty {
   text-align: center;
   padding: 60px;
   color: var(--jrpg-text-soft);
 }
-
-/* 响应式：窄屏改单列 */
 @media (max-width: 900px) {
   .dual-column {
     grid-template-columns: 1fr;

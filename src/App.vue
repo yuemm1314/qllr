@@ -10,6 +10,7 @@ const charactersStore = useCharactersStore()
 
 const activeMenu = computed(() => {
   if (route.path.startsWith('/characters')) return '/characters'
+  if (route.path.startsWith('/bosses')) return '/bosses'
   return '/teams'
 })
 
@@ -41,10 +42,9 @@ onMounted(() => {
           <el-icon><User /></el-icon>
           <span>角色库</span>
         </el-menu-item>
-        <el-menu-item index="/bosses" disabled>
+        <el-menu-item index="/bosses">
           <el-icon><Grid /></el-icon>
           <span>Boss 笔记</span>
-          <span class="soon">即将开放</span>
         </el-menu-item>
       </el-menu>
       <div class="aside-footer">
@@ -125,14 +125,6 @@ onMounted(() => {
   flex: 1;
   border-right: none;
   padding-top: 8px;
-}
-.soon {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--jrpg-text-muted);
-  background: rgba(0, 0, 0, 0.3);
-  padding: 1px 6px;
-  border-radius: 8px;
 }
 .aside-footer {
   padding: 12px 16px;

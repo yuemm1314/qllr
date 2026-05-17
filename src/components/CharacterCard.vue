@@ -22,7 +22,7 @@ defineEmits<{
       <el-image
         :src="character.avatar"
         :alt="character.name"
-        fit="cover"
+        fit="contain"
         loading="lazy"
         class="avatar"
       >
@@ -69,15 +69,16 @@ defineEmits<{
   flex-shrink: 0;
 }
 .avatar {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border-radius: 3px;
   border: 1px solid var(--jrpg-border);
-  background: var(--jrpg-bg-deep);
+  background:
+    radial-gradient(circle at center, #3a2a18, var(--jrpg-bg-deep));
 }
 .compact .avatar {
-  width: 46px;
-  height: 46px;
+  width: 50px;
+  height: 50px;
 }
 .avatar-fallback {
   width: 100%;
@@ -102,6 +103,7 @@ defineEmits<{
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+  font-size: 13px;
 }
 .compact .name {
   font-size: 12px;

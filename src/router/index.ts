@@ -20,10 +20,21 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/CharacterLibrary.vue'),
     meta: { title: '角色库' },
   },
+  {
+    path: '/bosses',
+    name: 'BossList',
+    component: () => import('@/views/BossList.vue'),
+    meta: { title: 'Boss 笔记' },
+  },
+  {
+    path: '/bosses/:id',
+    name: 'BossEditor',
+    component: () => import('@/views/BossEditor.vue'),
+    meta: { title: 'Boss 详情' },
+  },
 ]
 
 export const router = createRouter({
-  // 用 hash 模式避免 GitHub Pages 部署时的路由问题
   history: createWebHashHistory(),
   routes,
 })
